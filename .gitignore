@@ -1,0 +1,13 @@
+# Simulation Artifacts
+*.vvp
+*.vcd
+
+# Vivado / Synthesis Artifacts
+.Xil/
+*.jou
+*.log
+*.pb
+*.str
+*.dir/
+xsim.dir/
+webtalk*
