@@ -1,7 +1,7 @@
 ## 12 MHz Physical System Clock on Cmod S7 (Pin M9)
 ## This pin constraint is only used if this module (or its wrapper) is the TOP-level design.
-set_property -dict { PACKAGE_PIN M9    IOSTANDARD LVCMOS33 } [get_ports { s_axi_aclk }];
-create_clock -add -name sys_clk_pin -period 83.333 -waveform {0 41.666} [get_ports { s_axi_aclk }];
+#set_property -dict { PACKAGE_PIN M9    IOSTANDARD LVCMOS33 } [get_ports { s_axi_aclk }];
+#create_clock -add -name sys_clk_pin -period 83.333 -waveform {0 41.666} [get_ports { s_axi_aclk }];
 
 ## -----------------------------------------------------------------------------
 ## TIMING CONSTRAINTS FOR SYNTHESIS & TIMING ANALYSIS
