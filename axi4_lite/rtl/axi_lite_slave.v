@@ -25,13 +25,13 @@ parameter DATA_WIDTH=32
     
     input wire s_axi_awvalid,
     output reg s_axi_awready,
-    input wire [23:0] s_axi_awaddr,
+    input wire [ADDR_WIDTH-1:0] s_axi_awaddr,
     input wire [2:0]  s_axi_awprot,
     
     input wire s_axi_wvalid,
     output reg s_axi_wready,
-    input wire [31:0] s_axi_wdata,
-    input wire [3:0]  s_axi_wstrb,
+    input wire [DATA_WIDTH-1:0] s_axi_wdata,
+    input wire [(DATA_WIDTH/8)-1:0]  s_axi_wstrb,
     
     output reg s_axi_bvalid,
     input wire s_axi_bready,
@@ -39,12 +39,12 @@ parameter DATA_WIDTH=32
     
     input wire s_axi_arvalid,
     output reg s_axi_arready,
-    input wire [23:0] s_axi_araddr,
+    input wire [ADDR_WIDTH-1:0] s_axi_araddr,
     input wire [2:0]  s_axi_arprot,
     
     output reg s_axi_rvalid,
     input wire s_axi_rready,
-    output reg [31:0] s_axi_rdata,
+    output reg [DATA_WIDTH-1:0] s_axi_rdata,
     output reg [1:0]  s_axi_rresp
 
     );
