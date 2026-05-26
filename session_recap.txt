@@ -1,0 +1,22 @@
+# Session Recap: AXI-Lite Slave & VIP Verification
+
+## What We Discussed & Learned
+1. **AXI-Lite Slave Architecture**: Reviewed the single-always block FSM design for AXI4-Lite Slave. Discussed how WSTRB (byte-enables) work for partial writes, and why RESP_SLVERR is returned for read-only registers.
+2. **Git Workspace Organization**: Cleaned up local repos, set up SSH keys for GitHub, and cloned public repositories into a central `~/git-hub` directory.
+3. **Out-of-Context (OOC) Synthesis**: Discussed why AXI interfaces are synthesized Out-of-Context rather than mapping 50+ AXI pins to physical pins like LEDs/Switches in `cmod_s7.xdc`.
+4. **Parameterizing Ports**: Updated `axi_lite_slave.v` to use `ADDR_WIDTH` and `DATA_WIDTH` for port sizes instead of hardcoded numbers `[23:0]` and `[31:0]`.
+5. **AXI Verification IP (VIP)**: 
+   - Integrated Xilinx AXI VIP into a Block Design (BD) in Vivado to test the slave.
+   - Resolved BD mismatch errors by configuring the AXI VIP Protocol from `AXI4` (default) to `AXI4LITE`.
+6. **SystemVerilog Testbench**: 
+   - Created `tb_axi_lite.sv` to instantiate the BD wrapper and use the AXI VIP master agent to issue write and read bursts.
+   - Addressed Vivado's notorious text editor bug which falsely flags SystemVerilog packages as "not declared" before simulation compilation.
+   - Fixed the `XILINX_RESET_PULSE_WIDTH` error by ensuring `aresetn` is held low for at least 16 clock cycles (changed `#50` to `#200` in the testbench).
+   - Successfully executed a write transaction (Response: 00) and read back `0xDEADBEEF` from the read-only register!
+
+## Files Updated/Added
+- `axi4_lite/rtl/axi_lite_slave.v`: Fixed hardcoded port widths to use parameters.
+- `axi4_lite/sim/tb_axi_lite.sv`: Added the final, working SystemVerilog testbench utilizing Xilinx AXI VIP.
+- `session_recap.txt`: This file!
+
+Ready to continue work on the office PC. Just run `git pull`!
