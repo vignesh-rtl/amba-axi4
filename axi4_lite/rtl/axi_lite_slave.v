@@ -118,8 +118,8 @@ parameter DATA_WIDTH=32
             reg_1           <= 32'h0;
             reg_2           <= 32'h0;
         end else begin
-            case(w_state)
             
+            case(w_state)
             //Write IDLE case
             W_IDLE: begin
                 //
@@ -169,72 +169,148 @@ parameter DATA_WIDTH=32
 			end
 			
 			
+			//
 			W_WRITE: begin
-			//
-			s_axi_bresp <= RESP_SLVERR;
-			//
 			     if (aw_addr_valid) begin
-			         case(aw_reg_sel) 
-			         //
+			         case(aw_reg_sel)
+			             
 			             REG_0_ADDR: begin
-                                // Apply WSTRB byte enables:
-                                // Only write bytes where strobe bit = 1
-                                if (w_strb_latched[0]) reg_0[ 7: 0] <= w_data_latched[ 7: 0];
-                                if (w_strb_latched[1]) reg_0[15: 8] <= w_data_latched[15: 8];
-                                if (w_strb_latched[2]) reg_0[23:16] <= w_data_latched[23:16];
-                                if (w_strb_latched[3]) reg_0[31:24] <= w_data_latched[31:24];
-                                s_axi_bresp <= RESP_OKAY;
-                            end
-
-                            // ── REG_1 at 0x04: R/W ─────────────────
-                            REG_1_ADDR: begin
-                                if (w_strb_latched[0]) reg_1[ 7: 0] <= w_data_latched[ 7: 0];
-                                if (w_strb_latched[1]) reg_1[15: 8] <= w_data_latched[15: 8];
-                                if (w_strb_latched[2]) reg_1[23:16] <= w_data_latched[23:16];
-                                if (w_strb_latched[3]) reg_1[31:24] <= w_data_latched[31:24];
-                                s_axi_bresp <= RESP_OKAY;
-                            end
-
-                            // ── REG_2 at 0x08: R/W ─────────────────
-                            REG_2_ADDR: begin
-                                if (w_strb_latched[0]) reg_2[ 7: 0] <= w_data_latched[ 7: 0];
-                                if (w_strb_latched[1]) reg_2[15: 8] <= w_data_latched[15: 8];
-                                if (w_strb_latched[2]) reg_2[23:16] <= w_data_latched[23:16];
-                                if (w_strb_latched[3]) reg_2[31:24] <= w_data_latched[31:24];
-                                s_axi_bresp <= RESP_OKAY;
-                            end
-
-                            // ── REG_3 at 0x0C: READ-ONLY ───────────
-                            // Writing to a read-only register = error
-                            // Don't modify anything, return SLVERR
-                            REG_3_ADDR: begin
-                                s_axi_bresp <= RESP_SLVERR;
-                            end
-
-                            // ── Default: address decoded but unknown
-                            default: begin
-                                s_axi_bresp <= RESP_SLVERR;
-                            end
-			     
-			     W_RESP: begin
-                    if (s_axi_bready) begin
-                        // Master accepted the response
-                        s_axi_bvalid <= 1'b0;   // De-assert BVALID
-                         w_state      <= W_IDLE;  // Ready for next transaction
-                  end
-                   // else: hold BVALID=1 and BRESP stable until BREADY
-                    // AXI Rule 3: VALID must stay high until READY goes high
-                  end
-    
-	               endcase
-			
+			                 if (w_strb_latched[0]) reg_0[ 7: 0] <= w_data_latched[ 7: 0];
+			                 if (w_strb_latched[1]) reg_0[ 15:8] <= w_data_latched[15: 8];
+			                 if (w_strb_latched[2]) reg_0[23:16] <= w_data_latched[23:16];
+			                 if (w_strb_latched[3]) reg_0[31:24] <= w_data_latched[31:24];
+			                 s_axi_bresp <= RESP_OKAY;
+			             end
+			             
+			             REG_1_ADDR: begin
+                             if (w_strb_latched[0]) reg_1[ 7: 0] <= w_data_latched[ 7: 0];
+                             if (w_strb_latched[1]) reg_1[15: 8] <= w_data_latched[15: 8];
+                             if (w_strb_latched[2]) reg_1[23:16] <= w_data_latched[23:16];
+                             if (w_strb_latched[3]) reg_1[31:24] <= w_data_latched[31:24];
+                             s_axi_bresp <= RESP_OKAY;
+                         end
+                         
+                         REG_2_ADDR: begin
+                             if (w_strb_latched[0]) reg_2[ 7: 0] <= w_data_latched[ 7: 0];
+                             if (w_strb_latched[1]) reg_2[15: 8] <= w_data_latched[15: 8];
+                             if (w_strb_latched[2]) reg_2[23:16] <= w_data_latched[23:16];
+                             if (w_strb_latched[3]) reg_2[31:24] <= w_data_latched[31:24];
+                             s_axi_bresp <= RESP_OKAY;
+                         end
+                         
+                         REG_3_ADDR: begin
+                             s_axi_bresp <= RESP_SLVERR;
+                         end
+                         
+                         default: begin
+                             s_axi_bresp <= RESP_SLVERR;
+                         end
+			         endcase
 			     end
-			
-			  end
-			
+			     //
+			     s_axi_bvalid <= 1'b1;
+			     w_state      <= W_RESP;
+			   end
+			   
+			   W_RESP: begin
+			     if (s_axi_bready) begin
+			         s_axi_bvalid <= 1'b0;
+			         w_state      <= W_IDLE;
+			     end
+			   end
+			   
+			   default: begin
+			     w_state       <= W_IDLE;
+			     s_axi_awready <= 1'b0;
+			     s_axi_wready  <= 1'b0;
+			     s_axi_bvalid  <= 1'b0;
+			   end
+			   
 			endcase
 		end
 	 end
-     
+	 
+	 //===== Read FSM =====
+	 always@(posedge s_axi_aclk or negedge s_axi_aresetn)begin
+	   if (!s_axi_aresetn) begin
+	       r_state         <= R_IDLE;
+	       s_axi_arready   <= 1'b0;
+	       s_axi_rvalid    <= 1'b0;
+	       s_axi_rdata     <= {DATA_WIDTH{1'b0}};
+	       s_axi_rresp     <= RESP_OKAY;
+	       ar_addr_latched <= {ADDR_WIDTH{1'b0}};
+	       
+	       
+	   end else begin
+	       case(r_state)
+	           //
+	           R_IDLE: begin
+	               s_axi_arready <= 1'b1;
+	               s_axi_rvalid  <= 1'b0;
+	               
+	               if (s_axi_arvalid) begin
+	                   ar_addr_latched  <= s_axi_araddr;
+	                   s_axi_arready    <= 1'b0;
+	                   r_state          <= R_READ;
+	               end
+	           end
+	           
+	           R_READ: begin
+	               s_axi_rdata <= 32'hBAD_ACCE5;
+	               s_axi_rresp <= RESP_SLVERR;
+	               
+	               if (ar_addr_valid) begin 
+	                   case(ar_reg_sel)
+	                       //
+	                       REG_0_ADDR: begin 
+	                           s_axi_rdata <= reg_0;
+	                           s_axi_rresp <= RESP_OKAY;
+	                       end
+	                       //
+	                       REG_1_ADDR: begin
+	                           s_axi_rdata <= reg_1;
+	                           s_axi_rresp <= RESP_OKAY;
+	                       end
+	                       //
+	                       REG_2_ADDR: begin
+	                           s_axi_rdata <= reg_2;
+	                           s_axi_rresp <= RESP_OKAY;
+	                       end
+	                       //
+	                       REG_3_ADDR: begin
+	                           s_axi_rdata <= REG_3_HARDWIRED;
+	                           s_axi_rresp <= RESP_OKAY;
+	                       end
+	                       //
+	                       default: begin 
+	                           s_axi_rdata <= 32'hBAD_ACCE5;
+	                           s_axi_rresp <= RESP_SLVERR;
+	                       end
+	                   endcase
+	               end
+	               //
+	               s_axi_rvalid <= 1'b1;
+	               r_state      <= R_RESP;
+	           end
+	           
+	           //Read respond
+	           R_RESP: begin
+	               if (s_axi_rready) begin
+	                   s_axi_rvalid <= 1'b0;
+	                   r_state      <= R_IDLE;
+	                   //
+	               end
+	           //    
+	           end
+	           
+	           default: begin
+	               r_state       <= R_IDLE;
+	               s_axi_arready <= 1'b0;
+	               s_axi_rvalid  <= 1'b0; 
+	           end
+	       endcase
+	   end
+	   
+     end
     
 endmodule
