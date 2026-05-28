@@ -31,7 +31,7 @@ parameter DATA_WIDTH=32
     input wire s_axi_wvalid,
     output reg s_axi_wready,
     input wire [DATA_WIDTH-1:0] s_axi_wdata,
-    input wire [(DATA_WIDTH/8)-1:0]  s_axi_wstrb,
+    input wire [3:0]  s_axi_wstrb,
     
     output reg s_axi_bvalid,
     input wire s_axi_bready,
