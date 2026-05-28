@@ -1,22 +1,94 @@
-# Session Recap: AXI-Lite Slave & VIP Verification
+Here is the exact standard implementation for a Universal AXI-Lite Master.
 
-## What We Discussed & Learned
-1. **AXI-Lite Slave Architecture**: Reviewed the single-always block FSM design for AXI4-Lite Slave. Discussed how WSTRB (byte-enables) work for partial writes, and why RESP_SLVERR is returned for read-only registers.
-2. **Git Workspace Organization**: Cleaned up local repos, set up SSH keys for GitHub, and cloned public repositories into a central `~/git-hub` directory.
-3. **Out-of-Context (OOC) Synthesis**: Discussed why AXI interfaces are synthesized Out-of-Context rather than mapping 50+ AXI pins to physical pins like LEDs/Switches in `cmod_s7.xdc`.
-4. **Parameterizing Ports**: Updated `axi_lite_slave.v` to use `ADDR_WIDTH` and `DATA_WIDTH` for port sizes instead of hardcoded numbers `[23:0]` and `[31:0]`.
-5. **AXI Verification IP (VIP)**: 
-   - Integrated Xilinx AXI VIP into a Block Design (BD) in Vivado to test the slave.
-   - Resolved BD mismatch errors by configuring the AXI VIP Protocol from `AXI4` (default) to `AXI4LITE`.
-6. **SystemVerilog Testbench**: 
-   - Created `tb_axi_lite.sv` to instantiate the BD wrapper and use the AXI VIP master agent to issue write and read bursts.
-   - Addressed Vivado's notorious text editor bug which falsely flags SystemVerilog packages as "not declared" before simulation compilation.
-   - Fixed the `XILINX_RESET_PULSE_WIDTH` error by ensuring `aresetn` is held low for at least 16 clock cycles (changed `#50` to `#200` in the testbench).
-   - Successfully executed a write transaction (Response: 00) and read back `0xDEADBEEF` from the read-only register!
+As we discussed, to make it professional and fully compliant for a RISC-V or DMA engine, we do not use one giant FSM. Instead, we use independent control blocks for each channel. This allows the Address and Data to be sent simultaneously or on completely different clock cycles without ever freezing!
 
-## Files Updated/Added
-- `axi4_lite/rtl/axi_lite_slave.v`: Fixed hardcoded port widths to use parameters.
-- `axi4_lite/sim/tb_axi_lite.sv`: Added the final, working SystemVerilog testbench utilizing Xilinx AXI VIP.
-- `session_recap.txt`: This file!
+Here is the Verilog logic you can drop directly into your module:
 
-Ready to continue work on the office PC. Just run `git pull`!
+1. Internal Trackers (The Flags)
+You need a few internal registers to keep track of which channels have finished their handshakes.
+
+verilog
+// Internal flags to remember which handshakes have finished
+    reg aw_done;
+    reg w_done;
+    reg b_done;
+2. The Write Address Channel (AW)
+This block only cares about sending the address.
+
+verilog
+always @(posedge aclk) begin
+        if (!aresetn) begin
+            m_axi_awvalid <= 0;
+            aw_done       <= 0;
+        end else begin
+            // If user requests a write, and AW is not done yet, fire VALID!
+            if (user_wr_req && !aw_done && !m_axi_awvalid) begin
+                m_axi_awvalid <= 1'b1;
+                m_axi_awaddr  <= user_wr_addr;
+                m_axi_awprot  <= 3'b000; // Standard data access
+            end 
+            // When Slave says READY, the address is accepted.
+            else if (m_axi_awvalid && m_axi_awready) begin
+                m_axi_awvalid <= 1'b0;
+                aw_done       <= 1'b1;
+            end
+            
+            // Clear the flag when the whole transaction finishes
+            if (b_done) aw_done <= 1'b0;
+        end
+    end
+3. The Write Data Channel (W)
+This block runs in parallel to AW. It only cares about sending the data.
+
+verilog
+always @(posedge aclk) begin
+        if (!aresetn) begin
+            m_axi_wvalid <= 0;
+            w_done       <= 0;
+        end else begin
+            // If user requests a write, and W is not done yet, fire VALID!
+            if (user_wr_req && !w_done && !m_axi_wvalid) begin
+                m_axi_wvalid <= 1'b1;
+                m_axi_wdata  <= user_wr_data;
+                m_axi_wstrb  <= {(DATA_WIDTH/8){1'b1}}; // Write all bytes
+            end 
+            // When Slave says READY, the data is accepted.
+            else if (m_axi_wvalid && m_axi_wready) begin
+                m_axi_wvalid <= 1'b0;
+                w_done       <= 1'b1;
+            end
+            
+            // Clear the flag when the whole transaction finishes
+            if (b_done) w_done <= 1'b0;
+        end
+    end
+4. The Write Response Channel (B)
+This block waits for both the AW and W blocks to finish (aw_done and w_done). Then it asks the slave for the success/error response.
+
+verilog
+always @(posedge aclk) begin
+        if (!aresetn) begin
+            m_axi_bready <= 0;
+            b_done       <= 0;
+            user_wr_done <= 0;
+        end else begin
+            user_wr_done <= 0; // Default: don't pulse done unless finished
+            b_done       <= 0;
+            
+            // If both Address and Data are accepted by the slave, ask for response
+            if (aw_done && w_done && !m_axi_bready) begin
+                m_axi_bready <= 1'b1;
+            end 
+            // When Slave gives the response...
+            else if (m_axi_bready && m_axi_bvalid) begin
+                m_axi_bready <= 1'b0;          // Stop asking
+                user_wr_resp <= m_axi_bresp;   // Capture the status (00 = OKAY)
+                user_wr_done <= 1'b1;          // Pulse DONE to tell the CPU/DMA!
+                b_done       <= 1'b1;          // This triggers AW and W to reset
+            end
+        end
+    end
+Why this is a Masterpiece:
+Fully Decoupled: Notice how aw_done and w_done don't care about each other? If the slave is slow to accept data, but fast to accept the address, the FSM handles it perfectly without getting stuck.
+Clean User Interface: The user (RISC-V CPU) just holds user_wr_req = 1 until it sees user_wr_done spike to 1. The CPU doesn't have to know anything about AXI timing!
+You can use this exact same pattern for the Read (AR and R) channels, using an ar_done and r_done flag! Try assembling this into the module shell we made earlier!
