@@ -154,7 +154,7 @@ parameter DATA_WIDTH=32
             m_axi_arvalid       <= 1'b0;
             m_axi_araddr        <= 0;
             m_axi_arprot        <= 3'b000;
-            ar_done              <= 1'b0;
+            ar_done             <= 1'b0;
         end else begin 
             if (user_rd_req && !ar_done && !m_axi_arvalid) begin 
                 m_axi_arvalid   <= 1'b1;
@@ -163,10 +163,35 @@ parameter DATA_WIDTH=32
             end
             else if (m_axi_arvalid && m_axi_arready) begin
                 m_axi_arvalid   <= 1'b0;
-                ar_done          <= 1'b1;
+                ar_done         <= 1'b1;
             end
             if (r_done) begin 
-                ar_done          <= 1'b0;
+                ar_done         <= 1'b0;
+            end
+        end
+    end
+    
+    
+    //Read Responce
+    always @(posedge aclk) begin 
+        if (!aresetn) begin 
+            m_axi_rready        <= 1'b0;
+            user_rd_data        <= 0;
+            user_rd_done        <= 1'b0;
+            user_rd_resp        <= 2'b00;
+            r_done              <= 1'b0;
+        end else begin 
+            user_rd_done        <= 1'b0;
+            r_done              <= 1'b0;
+            if (ar_done && !m_axi_rready) begin 
+                m_axi_rready    <= 1'b1;
+            end 
+            else if (m_axi_rready && m_axi_rvalid) begin
+                m_axi_rready    <= 1'b0;
+                user_rd_data    <= m_axi_rdata;
+                user_rd_resp    <= m_axi_rresp;
+                user_rd_done    <= 1'b1;
+                r_done          <= 1'b1;
             end
         end
     end
