@@ -154,19 +154,19 @@ parameter DATA_WIDTH=32
             m_axi_arvalid       <= 1'b0;
             m_axi_araddr        <= 0;
             m_axi_arprot        <= 3'b000;
-            r_done              <= 1'b0;
+            ar_done              <= 1'b0;
         end else begin 
-            if (user_rd_req && !r_done && !m_axi_arvalid) begin 
+            if (user_rd_req && !ar_done && !m_axi_arvalid) begin 
                 m_axi_arvalid   <= 1'b1;
                 m_axi_araddr    <= user_rd_addr;
                 m_axi_arprot    <= 3'b000;  
             end
             else if (m_axi_arvalid && m_axi_arready) begin
                 m_axi_arvalid   <= 1'b0;
-                r_done          <= 1'b1;
+                ar_done          <= 1'b1;
             end
             if (r_done) begin 
-                r_done          <= 1'b0;
+                ar_done          <= 1'b0;
             end
         end
     end
