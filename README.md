@@ -10,12 +10,13 @@ A hands-on, from-scratch implementation and study repository for the AMBA AXI4 p
 - [`docs/axi4_protocol_fundamentals.md`](docs/axi4_protocol_fundamentals.md): Comprehensive reference for all AXI4 rules, bursts, WSTRB, cache signals, and formulas.
 - [`docs/verilog_rtl_coding_style.md`](docs/verilog_rtl_coding_style.md): Professional RTL coding guide covering FSM encoding, non-blocking/blocking rules, and registered outputs for AXI.
 
-### 🔌 2. AXI4-Lite (In Progress)
-- **Status:** Slave RTL developed. Verification next.
-- [`axi4_lite/rtl/axi_lite_slave.v`](axi4_lite/rtl/axi_lite_slave.v): A robust, fully-commented AXI4-Lite slave with a 4-register bank. It implements a single-always FSM, one-hot encoding, proper WSTRB handling, and SLVERR responses.
-- **Next steps:** 
-  1. Add AXI4-Lite Master testbench or use Vivado AXI VIP for verification.
-  2. Expand to include a PWM controller and interrupt logic.
+### 🔌 2. AXI4-Lite (Completed)
+- **Status:** Master and Slave RTL developed and verified in hardware.
+- [`axi4_lite/rtl/axi_lite_slave.v`](axi4_lite/rtl/axi_lite_slave.v): A robust AXI4-Lite slave with a 4-register bank.
+- [`axi4_lite/rtl/axi_lite_master.v`](axi4_lite/rtl/axi_lite_master.v): A custom AXI4-Lite master wrapper connecting Wishbone to AXI.
+- [`axi4_lite/rtl/axi_pwm_slave.v`](axi4_lite/rtl/axi_pwm_slave.v): A dual-register AXI4-Lite hardware PWM controller.
+- [`axi4_lite/firmware/axi_pwm/main.c`](axi4_lite/firmware/axi_pwm/main.c): C firmware controlling the AXI PWM hardware to create a breathing LED effect.
+- **Hardware Integration:** The complete system was successfully deployed on the Cmod-S7 FPGA. The custom RISC-V SoC controls the AXI hardware via firmware. See the **[RV32i-soc Repository](https://github.com/vignesh-rtl/RV32i-soc)** for the closed-loop system implementation.
 
 ### 🚀 3. AXI4-Full (Planned)
 - Implement a burst-capable memory controller.
